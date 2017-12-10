@@ -155,3 +155,167 @@ contract MarketPlace{
     return (ids);
 
   }
+
+  function getAllProductIds() public constant returns (uint[]){
+
+    // we check whether there is at least one article
+    if(product_id == 0) {
+      return new uint[](0);
+    }
+
+    // prepare intermediary array
+    uint[] memory productIds = new uint[](product_id);
+
+    uint numberOfProductsForSale = 0;
+    // iterate over products
+    for (uint i = 0; i <= product_id; i++) {
+      // keep only the ID of products not sold yet
+      if (products[i].quantity != 0) {
+        productIds[numberOfProductsForSale] = products[i].id;
+        numberOfProductsForSale++;
+      }
+    }
+
+    return productIds;
+  }
+
+  function getProductIds(uint offset,uint limit) public constant returns (uint[]){
+
+    // we check whether there is at least one article
+    if(product_id == 0) {
+      return new uint[](0);
+    }
+
+    // prepare intermediary array
+    uint[] memory productIds = new uint[](limit);
+
+    uint numberOfProductsForSale = 0;
+
+    // iterate over products
+    for (uint i = offset; numberOfProductsForSale < limit; i++) {
+      if(i > product_id)
+        break;
+      // keep only the ID of products not sold yet
+      if (products[i].quantity != 0) {
+        productIds[numberOfProductsForSale] = products[i].id;
+        numberOfProductsForSale++;
+      }
+    }
+    return productIds;
+  }
+
+  function getTotalProductCount() public constant returns (uint){
+    	return product_id;
+  }
+
+  function getProduct(uint p_id) public constant returns (uint, string, string, uint, uint, string, string, address){
+       var p = products[p_id];
+       return (p.id, p.name, p.category, p.unit_price, p.quantity, p.description, p.image_ids, p.seller);
+  }
+
+  function getProductIdsForCategory(uint offset,uint limit,string category) public constant returns (uint[]){
+
+    if(product_id == 0)
+      return new uint[](0);
+
+    uint numberOfProductsForSale = 0;
+    uint[] memory productIds = new uint[](limit);
+
+    // iterate over products
+    for (uint i = offset; i <= product_id; i++) {
+
+      // keep only the ID of products not sold yet
+      if (products[i].quantity == 0) {
+        continue;
+      }
+
+      bool eq = true;
+
+      if(keccak256(products[i].category) != keccak256(category))
+        eq=false;
+
+      // keep only the ID of products not sold yet
+      if (products[i].quantity != 0 && eq) {
+        productIds[numberOfProductsForSale] = products[i].id;
+        numberOfProductsForSale++;
+      }
+    }
+
+    return productIds;
+  }
+
+  function getTotalProductCountForCategory(string category) public constant returns (uint){
+
+      if(product_id == 0)
+        return 0;
+
+      uint numberOfProductsForSale = 0;
+
+      // iterate over products
+      for (uint i = 1; i <= product_id; i++) {
+      // keep only the ID of products not sold yet
+        if (products[i].quantity == 0) {
+          continue;
+        }
+        bytes storage a = bytes(products[i].category);
+        bytes memory b = bytes(category);
+		    if (a.length != b.length)
+          continue;
+		      // @todo unroll this loop
+        bool eq = true;
+
+    		/*for (uint z = 0; z < a.length; z++){
+          if (a[z] != b[z]){
+            eq=false;
+    				break;
+          }
+        }*/
+
+        if(keccak256(products[i].category) != keccak256(category))
+          eq=false;
+
+        if (products[i].quantity != 0 && eq)
+          numberOfProductsForSale++;
+
+      }
+
+      return numberOfProductsForSale;
+    }
+
+    function refund(uint id) payable public{
+
+      transactions[id].status = transaction_status.CANCELLED;
+      transactions[id].buyer.transfer(msg.value);
+      products[transactions[id].product_id].quantity += transactions[id].quantity;
+    }
+
+    function setTransactionStatus(uint id, transaction_status status) public returns (bool){
+      if(transactions[id].id == 0)
+        return false;
+      if(transactions[id].status == transaction_status.CREATED && status == transaction_status.CANCELLED){
+        transactions[id].status = status;
+        return true;
+      }
+      else if(transactions[id].status == transaction_status.DELIVERED && msg.sender == transactions[id].buyer && status == transaction_status.REFUND_REQUESTED)
+      {
+        transactions[id].status = status;
+        return true;
+      }
+      else if(transactions[id].status == transaction_status.REFUND_REQUESTED && msg.sender == transactions[id].seller && status == transaction_status.CANCELLED ){
+        transactions[id].status = status;
+        return true;
+      }
+      else if(transactions[id].status == transaction_status.CREATED && msg.sender == transactions[id].seller && status == transaction_status.SHIPPED ){
+        transactions[id].status = status;
+        return true;
+      }
+      else if(transactions[id].status == transaction_status.SHIPPED && msg.sender == transactions[id].seller && status == transaction_status.DELIVERED ){
+        transactions[id].status = status;
+        return true;
+      }
+      else
+        return false;
+    }
+
+
+}
