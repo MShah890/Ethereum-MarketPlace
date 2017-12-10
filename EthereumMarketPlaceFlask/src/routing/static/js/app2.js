@@ -19,7 +19,6 @@ App = {
       web3 = new Web3(App.web3Provider);
     }
     
-    
     web3.eth.getAccounts(function(err, accounts){
         if (err != null) console.error("An error occurred: "+err);
         else if (accounts.length == 0) console.log("User is not logged in to MetaMask");
@@ -36,23 +35,18 @@ App = {
 
       // Set the provider for our contract.
       App.contracts.MarketPlace.setProvider(App.web3Provider);
+
       // Listen for events
       //App.listenToEvents();
 
       // Retrieve the article from the smart contract
       //return App.reloadArticles();
     });
-  },
-  
-  getInstance: function() {
-	  return App.contracts.MarketPlace;
   }
   
   
+  
 };
-
-
-
 
 $(function() {
   $(window).load(function() {
